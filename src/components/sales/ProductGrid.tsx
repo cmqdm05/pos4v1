@@ -8,7 +8,7 @@ interface ProductGridProps {
 
 const ProductGrid = ({ products, onProductSelect }: ProductGridProps) => {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-y-auto pb-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 overflow-y-auto pb-4">
       {products?.map((product) => {
         const isOutOfStock = product.stock <= 0;
         
@@ -35,8 +35,8 @@ const ProductGrid = ({ products, onProductSelect }: ProductGridProps) => {
                 className="w-full h-32 object-cover rounded-lg mb-2"
               />
             )}
-            <h3 className="font-medium">{product.name}</h3>
-            <div className="flex justify-between items-center mt-1">
+            <h3 className="font-medium truncate">{product.name}</h3>
+            <div className="flex justify-between items-center mt-1 flex-wrap">
               <p className="text-sm text-gray-500">${product.price.toFixed(2)}</p>
               <p className={`text-sm ${isOutOfStock ? 'text-red-500' : 'text-gray-500'}`}>
                 Stock: {product.stock}

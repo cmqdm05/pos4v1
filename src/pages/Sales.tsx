@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
-import { ShoppingCart, History, Tag } from "lucide-react";
+import { ShoppingCart, History, Tag, Menu, X } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useGetProductsQuery } from "../store/services/productService";
 import { useGetCategoriesQuery } from "../store/services/categoryService";
@@ -35,6 +35,7 @@ const Sales = () => {
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [lastSaleData, setLastSaleData] = useState<any>(null);
   const [orderDiscount, setOrderDiscount] = useState<any>(null);
+  const [showCart, setShowCart] = useState(false);
 
   const filteredProducts = products?.filter((product: any) => {
     const matchesCategory =
@@ -66,6 +67,8 @@ const Sales = () => {
         },
       ]);
     }
+    // Show cart on mobile when adding items
+    setShowCart(true);
   };
 
   const removeFromCart = (productId: string) => {
@@ -95,20 +98,20 @@ const Sales = () => {
           let newSelectedModifiers = [...item.selectedModifiers];
 
           if (existingModifierIndex !== -1) {
-            // If the exact same option is selected, remove it (unselect)
-            if (item.selectedModifiers[existingModifierIndex].option.name === option.name) {
+            if (
+              item.selectedModifiers[existingModifierIndex].option.name ===
+              option.name
+            ) {
               newSelectedModifiers = newSelectedModifiers.filter(
                 (m) => m.name !== modifier.name
               );
             } else {
-              // Replace the existing option with the new one
               newSelectedModifiers[existingModifierIndex] = {
                 name: modifier.name,
                 option,
               };
             }
           } else {
-            // Add new modifier option
             newSelectedModifiers.push({
               name: modifier.name,
               option,
@@ -146,14 +149,10 @@ const Sales = () => {
 
   const calculateItemTotal = (item: CartItemType) => {
     let total = item.product.price * item.quantity;
-
-    // Add modifier prices
     total += item.selectedModifiers.reduce(
       (sum, modifier) => sum + modifier.option.price * item.quantity,
       0
     );
-
-    // Apply item-specific discounts
     item.selectedDiscounts.forEach((discount) => {
       if (discount.type === "percentage") {
         total *= 1 - discount.value / 100;
@@ -161,7 +160,6 @@ const Sales = () => {
         total -= discount.value * item.quantity;
       }
     });
-
     return total;
   };
 
@@ -171,17 +169,16 @@ const Sales = () => {
 
   const calculateTotal = () => {
     let total = calculateSubtotal();
-
-    // Apply order-level discount
     if (orderDiscount) {
-      if (orderDiscount.type === 'percentage') {
+      if (orderDiscount.type === "percentage") {
         const discountAmount = total * (orderDiscount.value / 100);
-        total -= orderDiscount.maxDiscount ? Math.min(discountAmount, orderDiscount.maxDiscount) : discountAmount;
+        total -= orderDiscount.maxDiscount
+          ? Math.min(discountAmount, orderDiscount.maxDiscount)
+          : discountAmount;
       } else {
         total -= orderDiscount.value;
       }
     }
-
     return total;
   };
 
@@ -233,13 +230,28 @@ const Sales = () => {
     setCart([]);
     setLastSaleData(null);
     setOrderDiscount(null);
+    setShowCart(false);
   };
 
   return (
-    <div className="h-[calc(100vh-6rem)] flex gap-6">
-      <div className="flex-1 flex flex-col">
+    <div className="h-[calc(100vh-6rem)] flex flex-col lg:flex-row gap-6">
+      {/* Mobile Cart Toggle */}
+      <button
+        onClick={() => setShowCart(!showCart)}
+        className="fixed bottom-4 right-4 lg:hidden z-50 bg-indigo-600 text-white p-4 rounded-full shadow-lg"
+      >
+        <ShoppingCart className="h-6 w-6" />
+        {cart.length > 0 && (
+          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center">
+            {cart.length}
+          </span>
+        )}
+      </button>
+
+      {/* Main Content Area */}
+      <div className={`flex-1 flex flex-col ${showCart ? 'hidden' : 'block'} lg:block`}>
         <div className="mb-4 space-y-4">
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <input
               type="text"
               placeholder="Search products..."
@@ -249,10 +261,10 @@ const Sales = () => {
             />
             <button
               onClick={() => setShowHistory(true)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-2"
             >
               <History className="h-5 w-5" />
-              History
+              <span className="hidden sm:inline">History</span>
             </button>
           </div>
           <CategoryFilter
@@ -268,15 +280,26 @@ const Sales = () => {
         />
       </div>
 
-      <div className="w-96 bg-white rounded-lg shadow-lg flex flex-col">
-        <div className="p-4 border-b">
+      {/* Cart Area */}
+      <div
+        className={`${
+          showCart ? 'fixed inset-0 z-40 bg-white' : 'hidden'
+        } lg:relative lg:block lg:w-96 lg:bg-white lg:rounded-lg lg:shadow-lg`}
+      >
+        <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
             Current Order
           </h2>
+          <button
+            onClick={() => setShowCart(false)}
+            className="lg:hidden p-2 hover:bg-gray-100 rounded-full"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[calc(100vh-15rem)]">
           {cart.map((item, index) => (
             <CartItem
               key={item.product._id}
@@ -301,7 +324,8 @@ const Sales = () => {
               <div className="flex justify-between text-sm text-green-600">
                 <span>Discount ({orderDiscount.name}):</span>
                 <span>
-                  -{orderDiscount.type === 'percentage'
+                  -
+                  {orderDiscount.type === "percentage"
                     ? `${orderDiscount.value}%`
                     : `$${orderDiscount.value}`}
                 </span>
@@ -319,7 +343,7 @@ const Sales = () => {
               className="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
             >
               <Tag className="h-4 w-4" />
-              Add Discount
+              <span className="hidden sm:inline">Add Discount</span>
             </button>
             <button
               onClick={() => setShowPaymentModal(true)}
