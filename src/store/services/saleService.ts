@@ -71,7 +71,7 @@ export const saleApi = api.injectEndpoints({
         method: 'POST',
         body: saleData,
       }),
-      invalidatesTags: ['Sales'],
+      invalidatesTags: ['Sales', 'Products'], // Add 'Products' to invalidate the products cache
     }),
     getSales: builder.query<Sale[], string>({
       query: (storeId) => `sales/${storeId}`,
@@ -87,7 +87,7 @@ export const saleApi = api.injectEndpoints({
         url: `sales/${saleId}/refund`,
         method: 'POST',
       }),
-      invalidatesTags: ['Sales'],
+      invalidatesTags: ['Sales', 'Products'], // Add 'Products' to invalidate the products cache
     }),
   }),
 });
